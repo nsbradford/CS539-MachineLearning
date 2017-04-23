@@ -1,3 +1,5 @@
 *.zip
 *.h5
+*.png
+data/
 matconvnet-1.0-beta24/
