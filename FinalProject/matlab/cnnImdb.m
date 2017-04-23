@@ -1,4 +1,4 @@
-function imdb = cnnImdb(N, filename, label, label_path, image_path)
+function imdb = cnnImdb(N, offset, filename, label, label_path, image_path)
     % =====================================================================
     % Initialize the imdb structure (image database).
     % Note the fields are arbitrary: only your getBatch needs to understand it.
@@ -15,11 +15,13 @@ function imdb = cnnImdb(N, filename, label, label_path, image_path)
     label_key = strcat('/', label);
     label_data = h5read(log_filename, label_key);
     
+    % =====================================================================
     % Preallocate memory
     images = zeros(160, 320, 3, N, 'single');
     labels = zeros(N, 1);
     set = ones(N, 1);
 
+    % =====================================================================
     % Generate N sample images.
     % Note that here one could load the images from files, and do any kind of
     % necessary pre-processing.
@@ -28,32 +30,33 @@ function imdb = cnnImdb(N, filename, label, label_path, image_path)
       average = get_label_average(start, stop, label_data);
       labels(i) = average;
 
+      % ===================================================================
       % Read single image from .h5
       % http://stackoverflow.com/q/42137631/3208877
-      image_data = h5read(camera_filename, '/X', [1 1 1 N], [320 160 3 1]);
+      image_data = h5read(camera_filename, '/X', [1 1 1 offset + N], [320 160 3 1]);
       rotated_image = imrotate(image_data, -90); 
       single_image = im2single(rotated_image);
       images(:,:,:,i) = single_image;
 
-      % Mark last 10% of samples as part of the validation set
-      if i > 0.9 * N
+      % ===================================================================
+      % Mark last 25% of samples as part of the validation set
+      if i > 0.75 * N
         set(i) = 2;
       end
     end
 
+    % =====================================================================
     % Show some example images
-    figure(2); montage(images(:,:,:,1:100)); title('Example images');
+    figure(2); montage(images(:,:,:,(N-5):N)); title('Example Images');
 
-    % Remove mean over whole dataset
-    images = bsxfun(@minus, images, mean(images, 4));
-
+    % =====================================================================
     % Store results in the imdb struct
-    imdb.images = images;
-    imdb.labels = labels;
-    imdb.set = set;
-    
+    imdb.images.data = images;
+    imdb.images.label = labels;
+    imdb.images.set = set;
+
     function [start, stop] = get_label_indices(image_number)
-        % =====================================================================
+        % =================================================================
         % Find log file indices associated with image
         % Note sampling difference is equal to 100 HZ sampling rate divided by
         % 20 HZ image sampling rate (5 log files per image)
@@ -63,7 +66,7 @@ function imdb = cnnImdb(N, filename, label, label_path, image_path)
     end
 
     function average = get_label_average(start, stop, log_data)
-        % =====================================================================
+        % =================================================================
         % Get average of log files for start and stop indices
         sum = 0;
         for n = start:stop
