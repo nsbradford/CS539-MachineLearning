@@ -23,11 +23,52 @@ from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
+from keras.layers.normalization import BatchNormalization
 from keras import losses
 
 # =================================================================================================
 
-def create_model(input_shape):
+def create_model_dropout(input_shape):
+    """ Architecture: 
+    """
+    model = Sequential()
+    model.add(Conv2D(32, kernel_size=(3, 3),
+                     activation='relu',
+                     input_shape=input_shape))
+    model.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(0.25))
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    # model.add(Dropout(0.5))
+    model.add(Dense(40, activation='relu'))
+    # model.add(Dropout(0.5))
+    model.add(Dense(1, activation='relu'))
+    # model.add(Dropout(0.5))
+    return model
+
+def create_model_batch_normalization(input_shape):
+    """ Normalize the activations of the previous layer at each batch, 
+        i.e. applies a transformation that maintains the mean activation 
+        close to 0 and the activation standard deviation close to 1.
+    """
+    # BatchNormalization(axis=-1,
+    #                     momentum=0.99,
+    #                     epsilon=0.001,
+    #                     center=True,
+    #                     scale=True,
+    #                     beta_initializer='zeros',
+    #                     gamma_initializer='ones',
+    #                     moving_mean_initializer='zeros',
+    #                     moving_variance_initializer='ones',
+    #                     beta_regularizer=None,
+    #                     gamma_regularizer=None,
+    #                     beta_constraint=None,
+    #                     gamma_constraint=None)
+    pass
+
+
+def create_model_basic(input_shape):
     """ Architecture: 
     """
     model = Sequential()
@@ -49,19 +90,14 @@ def create_model(input_shape):
 def steering_experiment(batch_size=128, epochs=1):
     img_rows, img_cols = 28, 28 # input image dimensions
     input_shape, x_train, x_test, y_train, y_test = get_train_test_data(img_rows, img_cols, num_classes)
-
-    # Architecture: 
-    model = create_model(input_shape)
+    model = create_model_basic(input_shape)
 
     # Adam optimizer:
     # original paper https://arxiv.org/abs/1412.6980
     # keras https://keras.io/optimizers/#adam
     # adam = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-    adam = keras.optimizers.Adam()
-    # model.compile(loss=losses.mean_squared_error, optimizer=adam)
-
-    model.compile(loss=keras.losses.categorical_crossentropy,
-                  optimizer=adam, #keras.optimizers.Adadelta()
+    model.compile(loss=keras.losses.mean_squared_error,
+                  optimizer=keras.optimizers.Adam(),
                   metrics=['accuracy'])
     model.fit(x_train, y_train,
               batch_size=batch_size,
