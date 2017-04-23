@@ -68,7 +68,7 @@ def concatenate(camera_names, time_len):
 first = True
 
 
-def datagen(filter_files, time_len=1, batch_size=256, ignore_goods=False):
+def datagen(filter_files=['data/camera/2016-01-30--11-24-51.h5'], time_len=1, batch_size=256, ignore_goods=False):
     """
     Parameters:
     -----------
@@ -154,8 +154,8 @@ def datagen(filter_files, time_len=1, batch_size=256, ignore_goods=False):
 #         yield img, angle_steers
 
 
-if __name__ == '__main__':
-    filter_files = ['data/camera/2016-01-30--11-24-51.h5']
-    for X_batch, angle_batch, speed_batch in datagen(filter_files):
-        print(X_batch.shape, angle_batch.shape, speed_batch.shape)
-        break
+# if __name__ == '__main__':
+#     filter_files = ['data/camera/2016-01-30--11-24-51.h5']
+#     for X_batch, angle_batch, speed_batch in datagen(filter_files):
+#         print(X_batch.shape, angle_batch.shape, speed_batch.shape)
+#         break
