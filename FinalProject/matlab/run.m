@@ -1,85 +1,72 @@
-
-%% Set up MatConvNet
-% +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-cd matconvnet-1.0-beta24
-run matlab/vl_setupnn;
-cd ..
+%% CNN for Regression
+% =========================================================================
+% http://www.mathworks.com/help/nnet/examples/train-a-convolutional-neural-network-for-regression.html
 
 %% Initialize the imdb structure (image database)
 % =========================================================================
-N = 200; % Max # of images in file: 52722
-offset = 4469; % Start of highway driving
 filename = '2016-01-30--11-24-51.h5';
+N = 750; % Max # of images in file 52722
+offset = 4500; % Start of highway driving
 label_key = 'steering_angle';
 label_path = './data/log/';
 image_path = './data/camera/';
 imdb = cnnImdb(N, offset, filename, label_key, label_path, image_path);
 
-%% Initialize the net
+train_indices = find(imdb.images.set == 1); % 1 = 75% train
+val_indices = find(imdb.images.set == 2); % 2 = 25% val
+[train_image, train_label] = getBatch(imdb, train_indices);
+[val_image, val_label] = getBatch(imdb, val_indices);
+
+%% Train CNN
 % =========================================================================
-net = cnnInit();
-vl_simplenn_display(net);
-res = vl_simplenn(net, imdb.images.data(:,:,:,1));
+layers = [ ...
+    imageInputLayer([160 320 3])
+    convolution2dLayer([8 8], 16, 'Stride', [4 4], 'Name', 'conv1')
+    reluLayer('Name', 'relu1')
+    convolution2dLayer([5 5], 32, 'Stride', [2 2], 'Name', 'conv2')
+    reluLayer('Name', 'relu2')
+    convolution2dLayer([5 5], 64, 'Stride', [2 2], 'Name', 'conv3')
+    dropoutLayer(0.2, 'Name', 'dropout1')
+    reluLayer('Name', 'relu3')
+    dropoutLayer(0.5, 'Name', 'dropout2')
+    reluLayer('Name', 'relu4')
+    fullyConnectedLayer(1)
+    regressionLayer];
 
-figure(32); clf; colormap gray;
-set(gcf,'name', 'Part 3.2: network input');
-subplot(1,2,1);
-imagesc(res(1).x); axis image off;
-title('CNN input');
+options = trainingOptions('sgdm', ...
+    'InitialLearnRate',0.01, ...
+    'MaxEpochs',3, ...
+    'CheckpointPath','./checkpoints');
 
-set(gcf,'name', 'Part 3.2: network output');
-subplot(1,2,2);
-imagesc(res(end).x); axis image off;
-title('CNN output (not trained yet)');
+rng('default');
 
-%% Learn the model
+net = trainNetwork(train_image, train_label, layers, options);
+
+%% Test CNN
 % =========================================================================
-trainOpts.expDir = 'data/2016-01-30--11-24-51';
-trainOpts.gpus = [];
-trainOpts.batchSize = 10;
-trainOpts.learningRate = 0.02;
-trainOpts.plotDiagnostics = false;
-trainOpts.numEpochs = 5;
-trainOpts.errorFunction = 'none';
+predicted_labels = predict(net, val_image);
+prediction_error = val_label - predicted_labels;
 
-net = cnn_train(net, imdb, @getBatch, trainOpts);
+thr = 10;
+num_correct = sum(abs(prediction_error) < thr);
+num_test_images = size(val_image, 4);
 
-%% Evaluate the model
-% =========================================================================
-train = find(imdb.images.set == 1);
-val = find(imdb.images.set == 2);
+accuracy = num_correct / num_test_images;
 
-[res_train, preds_train] = cnnPredict(net, imdb, train(1:30:151)); % Training results
-[res_test, preds_test] = cnnPredict(net, imdb, val(1:30:151)); % Validation results
+squares = prediction_error.^2;
+rmse = sqrt(mean(squares));
+
+disp(accuracy);
+disp(rmse);
 
 %% Functions
 % =========================================================================
-function [im, label] = getBatch(imdb, batch)
+function [image, label] = getBatch(imdb, batch)
     %GETBATCH  Get a batch of training data
     %   [IM, LABEL] = The GETBATCH(IMDB, BATCH) extracts the images IM
     %   and labels LABEL from IMDB according to the list of images
     %   BATCH.
 
-    im = imdb.images.data(:,:,:,batch);
+    image = imdb.images.data(:,:,:,batch);
     label = imdb.images.label(batch);
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

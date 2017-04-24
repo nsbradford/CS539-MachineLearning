@@ -28,6 +28,7 @@ function imdb = cnnImdb(N, offset, filename, label, label_path, image_path)
     for i = 1:N
       [start, stop] = get_label_indices(i);
       average = get_label_average(start, stop, label_data);
+      disp(average);
       labels(i) = average;
 
       % ===================================================================
