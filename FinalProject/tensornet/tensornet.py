@@ -155,7 +155,7 @@ def create_model_batch_normalization(input_shape):
     pass
 
 
-def main(N_EPOCHS=1, BATCHES_PER_EPOCH=12):
+def main(N_EPOCHS=1, BATCHES_PER_EPOCH=2000):
     """ batch size of 256 * 10000 batches, ~50,000 training frames
     """
     # model = create_model_dropout()
@@ -165,7 +165,7 @@ def main(N_EPOCHS=1, BATCHES_PER_EPOCH=12):
         samples_per_epoch=BATCHES_PER_EPOCH,
         nb_epoch=N_EPOCHS,
         validation_data=gen_validation(),
-        nb_val_samples=4
+        nb_val_samples=1000
     )
     print("Saving model weights and configuration file.")
     OUTPUT_DIR = './output_models/steering_model/'
