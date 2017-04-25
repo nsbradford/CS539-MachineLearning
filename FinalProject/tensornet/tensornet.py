@@ -220,7 +220,7 @@ def create_model_batch_normalization_nvidia():
     return model
 
 
-def main(N_EPOCHS=1, BATCHES_PER_EPOCH=4000):
+def main(N_EPOCHS=1, BATCHES_PER_EPOCH=2000):
     """ batch size of 256 * 10000 batches, ~50,000 training frames
     """
     # model = create_model_basic()
