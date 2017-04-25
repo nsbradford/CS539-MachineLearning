@@ -68,7 +68,7 @@ def concatenate(camera_names, time_len):
 first = True
 
 
-def datagen(filter_files, time_len=1, batch_size=256, ignore_goods=False):
+def datagen(filter_files, time_len=1, batch_size=128, ignore_goods=False):
     """
     Parameters:
     -----------

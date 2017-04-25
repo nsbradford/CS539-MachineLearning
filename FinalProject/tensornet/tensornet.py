@@ -195,7 +195,7 @@ def create_model_batch_normalization(input_shape):
     pass
 
 
-def main(N_EPOCHS=1, BATCHES_PER_EPOCH=2000):
+def main(N_EPOCHS=1, BATCHES_PER_EPOCH=4000):
     """ batch size of 256 * 10000 batches, ~50,000 training frames
     """
     # model = create_model_dropout()
