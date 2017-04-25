@@ -74,9 +74,9 @@ def create_model_basic():
             Adam optimizer (default params) and MSE loss function.
         Architecture:
             Normalization layer -> data in [-1, 1] range (done in NN to allow GPU use)
-            Conv2D: 16@8x8, stride (4, 4), ELU activation
-            Conv2D: 32@5x5, stride (2, 2), ELU activation
-            Conv2D: 64@5x5, stride (2, 2), ELU activation
+            Conv2D: 16, 8x8, stride (4, 4), ELU activation
+            Conv2D: 32, 5x5, stride (2, 2), ELU activation
+            Conv2D: 64, 5x5, stride (2, 2), ELU activation
             Feedforward: 512, ELU activation
             Feedforward: 1 (output layer)
     """
@@ -94,6 +94,46 @@ def create_model_basic():
     model.add(ELU())
     model.add(Dense(512))
     model.add(ELU())
+    model.add(Dense(1))
+    model.compile(optimizer="adam", loss="mse")
+    return model
+
+
+def create_model_nvidia():
+    """
+        Model from NVIDIA paper:
+            https://arxiv.org/abs/1604.07316
+        Meta-params:
+            Adam optimizer (default params) and MSE loss function.
+        Architecture:
+            Normalization layer -> data in [-1, 1] range (done in NN to allow GPU use)
+            Conv2D: 24, 5x5, stride (2, 2), "valid" instead of padded, ELU activation
+            Conv2D: 36, 5x5, stride (2, 2), "valid" instead of padded, ELU activation
+            Conv2D: 48, 5x5, stride (2, 2), "valid" instead of padded, ELU activation
+            Conv2D: 64, 3x3, "valid" instead of padded, ELU activation
+            Conv2D: 64, 3x3, "valid" instead of padded, ELU activation
+            Feedforward: 100, ELU activation
+            Feedforward: 50, ELU activation
+            Feedforward: 10, ELU activation
+            Feedforward: 1 (output layer)
+
+        Note: we have to use dim_ordering='th' for the convolutional layers to accept
+            the input in this format, despite using TensorFlow and not Theano.
+    """
+    ch, row, col = 3, 160, 320  # camera format
+    model = Sequential()
+    model.add(Lambda(lambda x: x/127.5 - 1.,
+                        input_shape=(ch, row, col),
+                        output_shape=(ch, row, col)))
+    model.add(Conv2D(24, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Conv2D(36, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Conv2D(48, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Flatten()) 
+    model.add(Dense(100, activation='elu'))
+    model.add(Dense(50, activation='elu'))
+    model.add(Dense(10, activation='elu'))
     model.add(Dense(1))
     model.compile(optimizer="adam", loss="mse")
     return model
@@ -159,7 +199,7 @@ def main(N_EPOCHS=1, BATCHES_PER_EPOCH=2000):
     """ batch size of 256 * 10000 batches, ~50,000 training frames
     """
     # model = create_model_dropout()
-    model = create_model_basic()
+    model = create_model_nvidia()
     model.fit_generator(
         gen_training(),
         samples_per_epoch=BATCHES_PER_EPOCH,
