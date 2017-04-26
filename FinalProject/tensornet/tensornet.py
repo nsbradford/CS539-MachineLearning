@@ -53,9 +53,9 @@ from keras.callbacks import History
 from dataload import datagen
 
 
-def gen_training():
+def gen_training(batch_size=128):
     training_files = ['data/camera/2016-01-30--11-24-51.h5']
-    for tup in datagen(training_files): # img, steering angle, speed
+    for tup in datagen(training_files, batch_size=batch_size): # img, steering angle, speed
         X, Y, _ = tup # drop the speed
         Y = Y[:, -1]
         if X.shape[1] == 1:  # no temporal context
@@ -63,9 +63,9 @@ def gen_training():
         yield X, Y
 
 
-def gen_validation():
+def gen_validation(batch_size=128):
     validation_files = ['data/camera/2016-02-08--14-56-28.h5']
-    for tup in datagen(validation_files): # img, steering angle, speed
+    for tup in datagen(validation_files, batch_size=batch_size): # img, steering angle, speed
         X, Y, _ = tup # drop the speed
         Y = Y[:, -1]
         if X.shape[1] == 1:  # no temporal context
@@ -77,8 +77,6 @@ def create_model_basic():
     """
         Model from Comma.ai:
             https://github.com/commaai/research/blob/master/train_steering_model.py
-        Meta-params:
-            Adam optimizer (default params) and MSE loss function.
         Architecture:
             Normalization layer -> data in [-1, 1] range (done in NN to allow GPU use)
             Conv2D: 16, 8x8, stride (4, 4), ELU activation
@@ -110,8 +108,6 @@ def create_model_nvidia():
     """
         Model from NVIDIA paper:
             https://arxiv.org/abs/1604.07316
-        Meta-params:
-            Adam optimizer (default params) and MSE loss function.
         Architecture:
             Normalization layer -> data in [-1, 1] range (done in NN to allow GPU use)
             Conv2D: 24, 5x5, stride (2, 2), "valid" instead of padded, ELU activation
@@ -297,21 +293,21 @@ def main(N_EPOCHS=10, BATCHES_PER_EPOCH=400, VALIDATION_BATCHES=100, OUTPUT_DIR=
         20k / 128 = ~200 batches -> reduce to 100 for a validation set of ~10,000
     """
     models = [
-        (create_model_basic(), 'basic' ),
-        (create_model_nvidia(), 'nvidia'),
-        (create_model_batch_normalization_simple(), 'batchnorm_basic'),
-        (create_model_batch_normalization_nvidia(), 'batchnorm_nvidia'),
-        (create_model_dropout_simple(), 'dropout_basic'),
-        (create_model_dropout_nvidia(), 'dropout_nvidia')
+        (create_model_basic(), 'basic', 256),
+        (create_model_nvidia(), 'nvidia', 128),
+        (create_model_batch_normalization_simple(), 'batchnorm_basic', 256),
+        (create_model_batch_normalization_nvidia(), 'batchnorm_nvidia', 128),
+        (create_model_dropout_simple(), 'dropout_basic', 256),
+        (create_model_dropout_nvidia(), 'dropout_nvidia', 128)
     ]
 
     model_records = [] # record of model performances for each epoch
-    for model, name in models:
+    for model, name, batch_size in models:
         print('=' * 60 + '\nBEGIN MODEL: {}'.format(name))
         start_time = time.time()
         new_hist = model.fit_generator(
-            gen_training(),
-            validation_data=gen_validation(),
+            gen_training(batch_size),
+            validation_data=gen_validation(batch_size),
             epochs=N_EPOCHS,
             steps_per_epoch=BATCHES_PER_EPOCH, # should be # samples / batch size            
             validation_steps=VALIDATION_BATCHES, # should be # samples / batch size
