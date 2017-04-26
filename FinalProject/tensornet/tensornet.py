@@ -287,18 +287,18 @@ def save_model(OUTPUT_DIR, model, name, new_hist, elapsed_time):
         json.dump(model.to_json(), outfile)
 
 
-def main(N_EPOCHS=10, BATCHES_PER_EPOCH=400, VALIDATION_BATCHES=100, OUTPUT_DIR='./output/models/'):
+def main(N_EPOCHS=10, BATCHES_PER_EPOCH=100, VALIDATION_BATCHES=100, OUTPUT_DIR='./output/models/'):
     """ ~50,000 training frames, ~20,000 validation, batch size=128
         50k / 128 = ~400 batches
         20k / 128 = ~200 batches -> reduce to 100 for a validation set of ~10,000
     """
     models = [
-        (create_model_basic(), 'basic', 256),
-        (create_model_nvidia(), 'nvidia', 128),
-        (create_model_batch_normalization_simple(), 'batchnorm_basic', 256),
+        # (create_model_basic(), 'basic', 256),
+        # (create_model_nvidia(), 'nvidia', 128),
+        # (create_model_batch_normalization_simple(), 'batchnorm_basic', 256),
         (create_model_batch_normalization_nvidia(), 'batchnorm_nvidia', 128),
-        (create_model_dropout_simple(), 'dropout_basic', 256),
-        (create_model_dropout_nvidia(), 'dropout_nvidia', 128)
+        # (create_model_dropout_simple(), 'dropout_basic', 256),
+        # (create_model_dropout_nvidia(), 'dropout_nvidia', 128)
     ]
 
     model_records = [] # record of model performances for each epoch
