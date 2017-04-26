@@ -68,12 +68,15 @@ def concatenate(camera_names, time_len):
 first = True
 
 
-def datagen(filter_files=['data/camera/2016-01-30--11-24-51.h5'], time_len=1, batch_size=256, ignore_goods=False):
+def datagen(filter_files, time_len=1, batch_size=128, ignore_goods=False):
     """
     Parameters:
     -----------
     leads : bool, should we use all x, y and speed radar leads? default is false, uses only x
     """
+
+    # code further down the line will replace 'camera' with 'log' for the target values.
+
     global first
     assert time_len > 0
     filter_names = sorted(filter_files)
@@ -125,7 +128,7 @@ def datagen(filter_files=['data/camera/2016-01-30--11-24-51.h5'], time_len=1, ba
             assert X_batch.shape == (batch_size, time_len, 3, 160, 320)
 
             logging.debug("load image : {}s".format(time.time()-t))
-            print("%5.2f ms" % ((time.time()-start)*1000.0))
+            print("\tImgLoad time: %5.2f ms" % ((time.time()-start)*1000.0))
 
             if first:
                 print "X", X_batch.shape
