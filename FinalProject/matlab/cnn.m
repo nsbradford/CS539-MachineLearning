@@ -1,11 +1,11 @@
-%% CNN for Regression
+%% CNN
 % =========================================================================
-% http://www.mathworks.com/help/nnet/examples/train-a-convolutional-neural-network-for-regression.html
+rng(1);
 
 %% Initialize the imdb structure (image database)
 % =========================================================================
 filename = '2016-01-30--11-24-51.h5';
-N = 750; % Max # of images in file 52722
+N = 5000; % Max # of images in file 52722
 offset = 4500; % Start of highway driving
 label_key = 'steering_angle';
 label_path = './data/log/';
@@ -34,11 +34,9 @@ layers = [ ...
     regressionLayer];
 
 options = trainingOptions('sgdm', ...
-    'InitialLearnRate',0.01, ...
-    'MaxEpochs',3, ...
-    'CheckpointPath','./checkpoints');
-
-rng('default');
+    'InitialLearnRate', 0.01, ...
+    'MaxEpochs', 15, ...
+    'CheckpointPath', './checkpoints');
 
 net = trainNetwork(train_image, train_label, layers, options);
 
