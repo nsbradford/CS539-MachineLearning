@@ -22,4 +22,16 @@ test_imdb = cnnImdb(...
 
 %% Random Forest
 % =========================================================================
+% https://www.mathworks.com/help/stats/regression-tree-ensembles.html
+rensemble = fitrensemble(train_imdb.images.data, train_imdb.images.label);
+
+time_start = tic;
+Y_predicted = predict(rensemble, test_imdb.images.data);
+time_elapsed = toc(time_start);
+
+display(time_elapsed);
+table(test_imdb.images.label(1:10), Y_predicted, 'VariableNames',...
+    {'ObservedValue','PredictedValue'})
+
+
 

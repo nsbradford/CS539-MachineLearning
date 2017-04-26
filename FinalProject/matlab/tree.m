@@ -17,7 +17,7 @@ train_imdb = cnnImdb(...
 test_imdb = cnnImdb(...
     N, offset, test_filename, label_key, label_path, image_path, false);
 
-%% Fit SVM
+%% Fit Tree
 % =========================================================================
 rtree = fitrtree(train_imdb.images.data, train_imdb.images.label);
 

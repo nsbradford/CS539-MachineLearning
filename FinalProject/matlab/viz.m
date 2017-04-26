@@ -19,7 +19,7 @@ for i = 1:N
     green(:,:,:,i) = single_image(:,:,2,:);
     blue(:,:,:,i) = single_image(:,:,3,:);
 end
-%}
+
 disp("Creating red channel histogram...");
 [y_red, x] = imhist(red);
 disp("Creating green channel histogram...");
@@ -34,7 +34,7 @@ hold on;
 title('RGB Channel Distribution (Test)')
 xlabel('Color'); ylabel('Count')
 hold off;
-
+%}
 %% Steering Angle Distribution
 % =========================================================================
 train_filename = '2016-01-30--11-24-51.h5'; % 52717 log records
@@ -58,11 +58,11 @@ x = 1; y = -1;
 norm_range = y - x;
 norm_labels = (norm_labels * norm_range) + x;
 
-nbins = 10;
+nbins = 1000;
 figure
 hist(norm_labels, nbins);
 h = findobj(gca, 'Type', 'patch');
-set(h, 'FaceColor', [0 0.5 0.5]);
+set(h, 'FaceColor', [0 0.5 0.5], 'EdgeColor', [0 0.5 0.5]);
 set(gca,'FontSize', 15, 'FontWeight', 'bold');
 hold on;
 title('Steering Angle Distribution (Test)')
