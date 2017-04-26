@@ -209,12 +209,14 @@ def create_model_batch_normalization_nvidia():
     model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
     model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
     model.add(Flatten()) 
-    model.add(Dense(100, activation='elu'))
+    model.add(Dense(100))
     model.add(BatchNormalization())
-    model.add(Dense(50, activation='elu'))
+    model.add(Dense(50))
     model.add(BatchNormalization())
-    model.add(Dense(10, activation='elu'))
+    model.add(ELU())
+    model.add(Dense(10))
     model.add(BatchNormalization())
+    model.add(ELU())
     model.add(Dense(1))
     model.compile(optimizer="adam", loss="mse")
     return model
@@ -228,7 +230,7 @@ def main(N_EPOCHS=1, BATCHES_PER_EPOCH=2000):
     model = create_model_batch_normalization_simple() 
     # model = create_model_batch_normalization_nvidia()
     # model = create_model_dropout()
-    
+
     model.fit_generator(
         gen_training(),
         samples_per_epoch=BATCHES_PER_EPOCH,
