@@ -128,7 +128,7 @@ def datagen(filter_files, time_len=1, batch_size=128, ignore_goods=False):
             assert X_batch.shape == (batch_size, time_len, 3, 160, 320)
 
             logging.debug("load image : {}s".format(time.time()-t))
-            print("%5.2f ms" % ((time.time()-start)*1000.0))
+            print("\tImgLoad time: %5.2f ms" % ((time.time()-start)*1000.0))
 
             if first:
                 print "X", X_batch.shape
