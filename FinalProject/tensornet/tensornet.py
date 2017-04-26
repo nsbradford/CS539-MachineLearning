@@ -20,17 +20,37 @@
     Batch normalization:
         keras docs: https://keras.io/layers/normalization/
         original paper: https://arxiv.org/pdf/1502.03167.pdf
+
+    train_path = [
+        './data/camera/2016-01-30--11-24-51.h5',
+        './data/camera/2016-01-30--13-46-00.h5',
+        './data/camera/2016-01-31--19-19-25.h5',
+        './data/camera/2016-02-02--10-16-58.h5',
+        './data/camera/2016-02-08--14-56-28.h5',
+        './data/camera/2016-02-11--21-32-47.h5',
+        './data/camera/2016-03-29--10-50-20.h5',
+        './data/camera/2016-04-21--14-48-08.h5',
+        './data/camera/2016-05-12--22-20-00.h5',
+    ]
+
+    validation_path = [
+        './data/camera/2016-01-30--11-24-51.h5',
+        './data/camera/2016-06-02--21-39-29.h5',
+        './data/camera/2016-06-08--11-46-01.h5'
+    ]
+
 """
 
+import time
 import os
 import json
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Lambda, ELU
 from keras.layers.convolutional import Conv2D
 from keras.layers.normalization import BatchNormalization
+from keras.callbacks import History 
 
 from dataload import datagen
-
 
 
 def gen_training():
@@ -44,7 +64,7 @@ def gen_training():
 
 
 def gen_validation():
-    validation_files = ['data/camera/2016-01-31--19-19-25.h5']
+    validation_files = ['data/camera/2016-02-08--14-56-28.h5']
     for tup in datagen(validation_files): # img, steering angle, speed
         X, Y, _ = tup # drop the speed
         Y = Y[:, -1]
@@ -104,7 +124,7 @@ def create_model_nvidia():
             Feedforward: 10, ELU activation
             Feedforward: 1 (output layer)
 
-        Note: we have to use dim_ordering='th' for the convolutional layers to accept
+        Note: we have to use data_format='channels_first' for the convolutional layers to accept
             the input in this format, despite using TensorFlow and not Theano.
     """
     ch, row, col = 3, 160, 320  # camera format
@@ -112,11 +132,11 @@ def create_model_nvidia():
     model.add(Lambda(lambda x: x/127.5 - 1.,
                         input_shape=(ch, row, col),
                         output_shape=(ch, row, col)))
-    model.add(Conv2D(24, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(36, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(48, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Conv2D(24, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(36, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(48, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', data_format='channels_first'))
     model.add(Flatten()) 
     model.add(Dense(100, activation='elu'))
     model.add(Dense(50, activation='elu'))
@@ -126,19 +146,9 @@ def create_model_nvidia():
     return model
 
 
-def create_model_dropout():
+def create_model_dropout_simple():
     """
-        Model from Comma.ai:
-            https://github.com/commaai/research/blob/master/train_steering_model.py
-        Meta-params:
-            Adam optimizer (default params) and MSE loss function.
-        Architecture:
-            Normalization layer to get all data in [-1, 1] range (done in NN to allow GPU use)
-            Conv2D: 16@8x8, stride (4, 4), ELU activation
-            Conv2D: 32@5x5, stride (2, 2), ELU activation
-            Conv2D: 64@5x5, stride (2, 2), ELU activation, dropout rate=0.2
-            Feedforward: 512, ELU activation, dropout rate=0.2
-            Feedforward: 1 (output layer)
+        Model from Comma.ai, but with dropout in the feedforward layers.
     """
     ch, row, col = 3, 160, 320  # camera format
     model = Sequential()
@@ -156,6 +166,36 @@ def create_model_dropout():
     model.add(Dense(512))
     model.add(Dropout(.5))
     model.add(ELU())
+    model.add(Dense(1))
+    model.compile(optimizer="adam", loss="mse")
+    return model
+
+def create_model_dropout_nvidia():
+    """
+        Architecture:
+            Same as NVidia model, except add batch normalization in the
+                feedforward layers.
+
+        Note: we have to use data_format='channels_first' for the convolutional layers to accept
+            the input in this format, despite using TensorFlow and not Theano.
+    """
+    ch, row, col = 3, 160, 320  # camera format
+    model = Sequential()
+    model.add(Lambda(lambda x: x/127.5 - 1.,
+                        input_shape=(ch, row, col),
+                        output_shape=(ch, row, col)))
+    model.add(Conv2D(24, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(36, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(48, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Flatten()) 
+    model.add(Dense(100, activation='elu'))
+    model.add(Dropout(.5))
+    model.add(Dense(50, activation='elu'))
+    model.add(Dropout(.5))
+    model.add(Dense(10, activation='elu'))
+    model.add(Dropout(.5))
     model.add(Dense(1))
     model.compile(optimizer="adam", loss="mse")
     return model
@@ -179,8 +219,11 @@ def create_model_batch_normalization_simple():
     model.add(Conv2D(32, (5, 5), strides=(2, 2), padding="same", activation='elu'))
     model.add(Conv2D(64, (5, 5), strides=(2, 2), padding="same", activation='elu'))
     model.add(Flatten())
-    model.add(Dense(512, activation='elu'))
+
+    model.add(Dense(512))
     model.add(BatchNormalization())
+    model.add(ELU())
+
     model.add(Dense(1))
     model.compile(optimizer="adam", loss="mse")
     return model
@@ -195,7 +238,7 @@ def create_model_batch_normalization_nvidia():
             Same as NVidia model, except add batch normalization in the
                 feedforward layers.
 
-        Note: we have to use dim_ordering='th' for the convolutional layers to accept
+        Note: we have to use data_format='channels_first' for the convolutional layers to accept
             the input in this format, despite using TensorFlow and not Theano.
     """
     ch, row, col = 3, 160, 320  # camera format
@@ -203,51 +246,80 @@ def create_model_batch_normalization_nvidia():
     model.add(Lambda(lambda x: x/127.5 - 1.,
                         input_shape=(ch, row, col),
                         output_shape=(ch, row, col)))
-    model.add(Conv2D(24, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(36, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(48, (5, 5), strides=(2, 2), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
-    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', dim_ordering='th'))
+    model.add(Conv2D(24, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(36, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(48, (5, 5), strides=(2, 2), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', data_format='channels_first'))
+    model.add(Conv2D(64, (3, 3), padding="valid", activation='elu', data_format='channels_first'))
     model.add(Flatten()) 
+
     model.add(Dense(100))
     model.add(BatchNormalization())
+    model.add(ELU())
+
     model.add(Dense(50))
     model.add(BatchNormalization())
     model.add(ELU())
+
     model.add(Dense(10))
     model.add(BatchNormalization())
     model.add(ELU())
+
     model.add(Dense(1))
     model.compile(optimizer="adam", loss="mse")
     return model
 
 
-def main(N_EPOCHS=1, BATCHES_PER_EPOCH=2000):
-    """ batch size of 256 * 10000 batches, ~50,000 training frames
-    """
-    # model = create_model_basic()
-    # model = create_model_nvidia()
-    model = create_model_batch_normalization_simple() 
-    # model = create_model_batch_normalization_nvidia()
-    # model = create_model_dropout()
+def save_model(OUTPUT_DIR, model, name, new_hist, elapsed_time):
+    print('-' * 40 + '\nMODEL: {}'.format(name))
+    print('train_loss:            {}'.format(new_hist.history['loss'][-1]))
+    print('val_loss:              {}'.format(new_hist.history['val_loss'][-1]))
+    print('Training time elapsed: {}'.format(elapsed_time))
+    print('\nHistory: {}\n'.format(new_hist.history))
+    print('\nTraining loss log:')
+    for n in new_hist.history['loss']:
+        print(n)
+    print('\nValidation loss log:')
+    for n in new_hist.history['val_loss']:
+        print(n)
 
-    model.fit_generator(
-        gen_training(),
-        samples_per_epoch=BATCHES_PER_EPOCH,
-        nb_epoch=N_EPOCHS,
-        validation_data=gen_validation(),
-        nb_val_samples=1000
-    )
-    print("Saving model weights and configuration file.")
-    OUTPUT_DIR = './output_models/steering_model/'
+    print('\nSaving model weights and configuration file...')
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
-    model.save_weights(OUTPUT_DIR + 'steering_angle.keras', True)
-    with open(OUTPUT_DIR + 'steering_angle.json', 'w') as outfile:
+    model.save_weights(OUTPUT_DIR + name + '.keras', True)
+    with open(OUTPUT_DIR + name + '.json', 'w') as outfile:
         json.dump(model.to_json(), outfile)
 
-    # score = model.evaluate(x_test, y_test, verbose=0)
-    # print('Test loss: {} \t Test Accuracy {} '.format(score[0], score[1]))
+
+def main(N_EPOCHS=10, BATCHES_PER_EPOCH=400, VALIDATION_BATCHES=100, OUTPUT_DIR='./output/models/'):
+    """ ~50,000 training frames, ~20,000 validation, batch size=128
+        50k / 128 = ~400 batches
+        20k / 128 = ~200 batches -> reduce to 100 for a validation set of ~10,000
+    """
+    models = [
+        (create_model_basic(), 'basic' ),
+        (create_model_nvidia(), 'nvidia'),
+        (create_model_batch_normalization_simple(), 'batchnorm_basic'),
+        (create_model_batch_normalization_nvidia(), 'batchnorm_nvidia'),
+        (create_model_dropout_simple(), 'dropout_basic'),
+        (create_model_dropout_nvidia(), 'dropout_nvidia')
+    ]
+
+    model_records = [] # record of model performances for each epoch
+    for model, name in models:
+        print('=' * 60 + '\nBEGIN MODEL: {}'.format(name))
+        start_time = time.time()
+        new_hist = model.fit_generator(
+            gen_training(),
+            validation_data=gen_validation(),
+            epochs=N_EPOCHS,
+            steps_per_epoch=BATCHES_PER_EPOCH, # should be # samples / batch size            
+            validation_steps=VALIDATION_BATCHES, # should be # samples / batch size
+            callbacks=[History()]
+        )
+        model_records.append(new_hist)
+        elapsed_time = int((time.time() - start_time) * 1000)
+        save_model(OUTPUT_DIR, model, name, new_hist, elapsed_time)
 
 
 if __name__ == "__main__":
