@@ -6,7 +6,7 @@ rng(1);
 % =========================================================================
 train_filename = '2016-01-30--11-24-51.h5'; % Max # of images in file 52722
 test_filename = '2016-02-08--14-56-28.h5'; % Max # of images in file 25865 
-N = 1000;
+N = 1065;
 label_key = 'steering_angle';
 label_path = './data/log/';
 image_path = './data/camera/';
@@ -31,6 +31,7 @@ mse_train = mean((y_fit - cv_rtree.Y).^2);
 y_pred = predict(rtree, test_imdb.images.data);
 mse_test = mean((y_pred - test_imdb.images.label).^2);
 
+view(cv_rtree.Trained{1}, 'Mode', 'graph')
 display(time_elapsed);
 display(mse_train);
 display(mse_test);

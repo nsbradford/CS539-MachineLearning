@@ -17,25 +17,6 @@ train_imdb = cnnImdb(...
 test_imdb = cnnImdb(...
     N, offset, test_filename, label_key, label_path, image_path, false, true);
 
-layers = [ ...
-    imageInputLayer([160 320 3])
-    convolution2dLayer([8 8], 16, 'Stride', [4 4], 'Name', 'conv1')
-    reluLayer('Name', 'relu1')
-    convolution2dLayer([5 5], 32, 'Stride', [2 2], 'Name', 'conv2')
-    reluLayer('Name', 'relu2')
-    convolution2dLayer([5 5], 64, 'Stride', [2 2], 'Name', 'conv3')
-    dropoutLayer(0.2, 'Name', 'dropout1')
-    reluLayer('Name', 'relu3')
-    dropoutLayer(0.5, 'Name', 'dropout2')
-    reluLayer('Name', 'relu4')
-    fullyConnectedLayer(1)
-    regressionLayer];
-
-options = trainingOptions('sgdm', ...
-    'InitialLearnRate', 0.01, ...
-    'MaxEpochs', 15, ...
-    'CheckpointPath', './checkpoints');
-
 %% Random Forest Bagging
 % =========================================================================
 % https://www.mathworks.com/help/stats/regression-tree-ensembles.html
@@ -47,10 +28,7 @@ time_start_bagging = tic;
 y_fit_bagging = kfoldPredict(cv_rensemble_bagging);
 time_elapsed_bagging = toc(time_start_bagging);
 
-net_bagging = trainNetwork(...
-    train_imdb.images.data, train_imdb.images.label, layers, options);
-
-predicted_labels_bagging = predict(net_bagging, test_imdb.images.data);
+predicted_labels_bagging = predict(y_fit_bagging, test_imdb.images.data);
 prediction_error_bagging = test_imdb.images.label - predicted_labels_bagging;
 
 squares_bagging = prediction_error_bagging.^2;
@@ -68,10 +46,7 @@ time_start_boosting = tic;
 y_fit_boosting = kfoldPredict(cv_rensemble_boosting);
 time_elapsed_boosting = toc(time_start_bagging);
 
-net_boosting = trainNetwork(...
-    train_imdb.images.data, train_imdb.images.label, layers, options);
-
-predicted_labels_boosting = predict(net_boosting, test_imdb.images.data);
+predicted_labels_boosting = predict(y_fit_boosting, test_imdb.images.data);
 prediction_error_boosting = test_imdb.images.label - predicted_labels_boosting;
 
 squares_boosting = prediction_error_boosting.^2;
