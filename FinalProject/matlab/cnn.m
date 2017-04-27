@@ -10,7 +10,9 @@ offset = 4500; % Start of highway driving
 label_key = 'steering_angle';
 label_path = './data/log/';
 image_path = './data/camera/';
-imdb = cnnImdb(N, offset, filename, label_key, label_path, image_path);
+
+imdb = cnnImdb(...
+    N, offset, train_filename, label_key, label_path, image_path, true, false);
 
 train_indices = find(imdb.images.set == 1); % 1 = 75% train
 val_indices = find(imdb.images.set == 2); % 2 = 25% val
@@ -52,15 +54,15 @@ num_test_images = size(val_image, 4);
 accuracy = num_correct / num_test_images;
 
 squares = prediction_error.^2;
-rmse = sqrt(mean(squares));
+mse = mean(squares);
 
 disp(accuracy);
-disp(rmse);
+disp(mse);
 
 %% Functions
 % =========================================================================
 function [image, label] = getBatch(imdb, batch)
-    %GETBATCH  Get a batch of training data
+    %   GETBATCH  Get a batch of training data
     %   [IM, LABEL] = The GETBATCH(IMDB, BATCH) extracts the images IM
     %   and labels LABEL from IMDB according to the list of images
     %   BATCH.

@@ -1,5 +1,5 @@
 function imdb = cnnImdb(...
-    N, offset, filename, label, label_path, image_path, splitData)
+    N, offset, filename, label, label_path, image_path, splitData, flatten)
     % =====================================================================
     % Initialize the imdb structure (image database).
     % Note the fields are arbitrary: only your getBatch needs to understand it.
@@ -17,7 +17,7 @@ function imdb = cnnImdb(...
     
     % =====================================================================
     % Preallocate memory
-    images = zeros(160, 320, 3, N, 'single');
+    images = zeros(160, 320, 1, N, 'single');
     labels = zeros(N, 1);
     set = ones(N, 1);
 
@@ -36,7 +36,11 @@ function imdb = cnnImdb(...
       image_data = h5read(camera_filename, '/X', [1 1 1 offset + i], [320 160 3 1]);
       rotated_image = imrotate(image_data, -90); 
       single_image = im2single(rotated_image);
-      images(:,:,:,i) = single_image;
+      if flatten
+          images(:,:,:,i) = rgb2gray(single_image);
+      else
+          images(:,:,:,i) = single_image;
+      end
 
       % ===================================================================
       % Mark last 25% of samples as part of the validation set
@@ -53,7 +57,11 @@ function imdb = cnnImdb(...
 
     % =====================================================================
     % Store results in the imdb struct
-    imdb.images.data = images;
+    if flatten
+        imdb.images.data = reshape(squeeze(images), [N, 51200]);
+    else
+        imdb.images.data = images    
+    end
     imdb.images.label = labels;
     imdb.images.set = set;
 
