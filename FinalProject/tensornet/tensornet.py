@@ -54,7 +54,18 @@ from dataload import datagen
 
 
 def gen_training(batch_size=128):
-    training_files = ['data/camera/2016-01-30--11-24-51.h5']
+    # training_files = ['data/camera/2016-01-30--11-24-51.h5']
+    training_files = [
+        # './data/camera/2016-01-30--11-24-51.h5',
+        './data/camera/2016-01-30--13-46-00.h5',
+        # './data/camera/2016-01-31--19-19-25.h5',
+        './data/camera/2016-02-02--10-16-58.h5',
+        './data/camera/2016-02-08--14-56-28.h5',
+        # './data/camera/2016-02-11--21-32-47.h5',
+        './data/camera/2016-03-29--10-50-20.h5',
+        './data/camera/2016-04-21--14-48-08.h5',
+        # './data/camera/2016-05-12--22-20-00.h5',
+    ]
     for tup in datagen(training_files, batch_size=batch_size): # img, steering angle, speed
         X, Y, _ = tup # drop the speed
         Y = Y[:, -1]
@@ -64,7 +75,11 @@ def gen_training(batch_size=128):
 
 
 def gen_validation(batch_size=128):
-    validation_files = ['data/camera/2016-02-08--14-56-28.h5']
+    # validation_files = ['data/camera/2016-02-08--14-56-28.h5']
+    validation_files = [
+        './data/camera/2016-01-30--11-24-51.h5',
+        './data/camera/2016-06-08--11-46-01.h5'
+    ]
     for tup in datagen(validation_files, batch_size=batch_size): # img, steering angle, speed
         X, Y, _ = tup # drop the speed
         Y = Y[:, -1]
@@ -82,6 +97,7 @@ def create_model_basic():
             Conv2D: 16, 8x8, stride (4, 4), ELU activation
             Conv2D: 32, 5x5, stride (2, 2), ELU activation
             Conv2D: 64, 5x5, stride (2, 2), ELU activation
+            Flatten
             Feedforward: 512, ELU activation
             Feedforward: 1 (output layer)
     """
@@ -115,6 +131,7 @@ def create_model_nvidia():
             Conv2D: 48, 5x5, stride (2, 2), "valid" instead of padded, ELU activation
             Conv2D: 64, 3x3, "valid" instead of padded, ELU activation
             Conv2D: 64, 3x3, "valid" instead of padded, ELU activation
+            Flatten
             Feedforward: 100, ELU activation
             Feedforward: 50, ELU activation
             Feedforward: 10, ELU activation
@@ -287,8 +304,9 @@ def save_model(OUTPUT_DIR, model, name, new_hist, elapsed_time):
         json.dump(model.to_json(), outfile)
 
 
-def main(N_EPOCHS=10, BATCHES_PER_EPOCH=100, VALIDATION_BATCHES=100, OUTPUT_DIR='./output/models/'):
-    """ ~50,000 training frames, ~20,000 validation, batch size=128
+def main(N_EPOCHS=200, BATCHES_PER_EPOCH=10000, VALIDATION_BATCHES=1000, OUTPUT_DIR='./output/models/'):
+    """ The original Comma.ai repo used 200 epochs with 10000 batches of 256 examples
+        ~50,000 training frames, ~20,000 validation, batch size=128
         50k / 128 = ~400 batches
         20k / 128 = ~200 batches -> reduce to 100 for a validation set of ~10,000
     """
@@ -296,8 +314,8 @@ def main(N_EPOCHS=10, BATCHES_PER_EPOCH=100, VALIDATION_BATCHES=100, OUTPUT_DIR=
         # (create_model_basic(), 'basic', 256),
         # (create_model_nvidia(), 'nvidia', 128),
         # (create_model_batch_normalization_simple(), 'batchnorm_basic', 256),
-        (create_model_batch_normalization_nvidia(), 'batchnorm_nvidia', 128),
-        # (create_model_dropout_simple(), 'dropout_basic', 256),
+        # (create_model_batch_normalization_nvidia(), 'batchnorm_nvidia', 128),
+        (create_model_dropout_simple(), 'dropout_basic', 256),
         # (create_model_dropout_nvidia(), 'dropout_nvidia', 128)
     ]
 
@@ -314,7 +332,7 @@ def main(N_EPOCHS=10, BATCHES_PER_EPOCH=100, VALIDATION_BATCHES=100, OUTPUT_DIR=
             callbacks=[History()]
         )
         model_records.append(new_hist)
-        elapsed_time = int((time.time() - start_time) * 1000)
+        elapsed_time = int(time.time() - start_time)
         save_model(OUTPUT_DIR, model, name, new_hist, elapsed_time)
 
 
